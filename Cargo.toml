@@ -1,0 +1,10 @@
+[package]
+name = "open-gl-tutorial"
+version = "0.1.0"
+authors = ["quote <quote@lv0.io>"]
+
+[dependencies]
+cgmath = "*"
+glfw = "*"
+time = "*"
+gl = "*"
