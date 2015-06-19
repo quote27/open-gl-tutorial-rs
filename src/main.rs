@@ -36,12 +36,12 @@ out vec4 out_color;
 uniform sampler2D tex_check_a;
 uniform sampler2D tex_check_b;
 
-uniform float alpha;
+uniform float time;
 
 void main() {
     vec4 col_a = texture(tex_check_a, o_texcoord);
     vec4 col_b = texture(tex_check_b, o_texcoord);
-    out_color = mix(col_a, col_b, 0.5) * vec4(o_color, 1.0); // * alpha;
+    out_color = mix(col_a, col_b, time) * vec4(o_color, 1.0);
 }";
 
 fn main() {
@@ -202,7 +202,7 @@ fn main() {
 
 
 
-    let alpha_u = prog.get_unif("alpha");
+    let time_u = prog.get_unif("time");
 
     let t_start = precise_time_s();
 
@@ -222,7 +222,7 @@ fn main() {
 
         // update scene
         let t_diff = t_now - t_start;
-        alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
+        time_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
 
         // draw graphics
         unsafe {
