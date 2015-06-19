@@ -15,12 +15,12 @@ mod shaders;
 static VS_SRC: &'static str = "
 #version 150 core
 in vec2 position;
-in vec3 color;
+in float color;
 
 out vec3 o_color;
 
 void main() {
-    o_color = color;
+    o_color = vec3(color);
     gl_Position = vec4(position, 0.0, 1.0);
 }";
 
@@ -32,7 +32,7 @@ out vec4 out_color;
 uniform float alpha;
 
 void main() {
-    out_color = vec4(1 - o_color, 1.0) * alpha;
+    out_color = vec4(o_color, 1.0) * alpha;
 }";
 
 fn main() {
@@ -73,10 +73,10 @@ fn main() {
     gl_error();
 
 
-    let vertices: [f32; 15] = [
-        0.0,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
-        0.5, -0.5, 0.0, 1.0, 0.0, // vertex 2 + green
-       -0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
+    let vertices: [f32; 9] = [
+        0.0,  0.5, 1.0, // vertex 1 + red
+        0.5, -0.5, 0.5, // vertex 2 + green
+       -0.5, -0.5, 0.1, // vertex 3 + blue
     ];
 
     let elements: [u32; 3] = [
@@ -117,7 +117,7 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, ptr::null());
+        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (3 * mem::size_of::<f32>()) as GLint, ptr::null());
         gl_error();
     }
 
@@ -132,7 +132,7 @@ fn main() {
         gl::EnableVertexAttribArray(color_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
+        gl::VertexAttribPointer(color_attr_u, 1, gl::FLOAT, gl::FALSE, (3 * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
         gl_error();
     }
 
