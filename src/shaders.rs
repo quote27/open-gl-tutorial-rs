@@ -183,6 +183,11 @@ impl Uniform {
         let Uniform(u) = *self;
         unsafe { gl::Uniform4fv(u, 4, mem::transmute(v)); }
     }
+
+    pub fn upload_3f(&self, a: f32, b: f32, c: f32) {
+        let Uniform(u) = *self;
+        unsafe { gl::Uniform3f(u, a, b, c); }
+    }
 }
 
 impl fmt::Display for Uniform {

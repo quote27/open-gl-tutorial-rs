@@ -1,7 +1,9 @@
 extern crate gl;
 extern crate glfw;
 extern crate cgmath;
+extern crate time;
 
+use time::precise_time_s;
 use gl::types::*;
 use glfw::{Action, Context, Key};
 use std::mem;
@@ -20,10 +22,11 @@ void main() {
 
 static FS_SRC: &'static str = "
 #version 150 core
+uniform vec3 triangle_color;
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(1.0, 1.0, 1.0, 1.0);
+    out_color = vec4(triangle_color, 1.0);
 }";
 
 fn main() {
@@ -97,16 +100,21 @@ fn main() {
         gl_error();
     }
 
-    println!("finished opengl creating stuff, starting main loop");
+    let triangle_color_u = prog.get_unif("triangle_color");
 
+    let t_start = precise_time_s();
 
+    println!("starting main loop");
     while !window.should_close() {
+        let t_now = precise_time_s();
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             handle_window_event(&mut window, event);
         }
 
         // update scene
+        let t_diff = t_now - t_start;
+        triangle_color_u.upload_3f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0, 0.0, 0.0);
 
         // draw graphics
         unsafe { gl::DrawArrays(gl::TRIANGLES, 0, 3); }
