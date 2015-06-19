@@ -73,19 +73,35 @@ fn main() {
     gl_error();
 
 
-    let vertices: [f32; 15] = [
-        0.0,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
-        0.5, -0.5, 0.0, 1.0, 0.0, // vertex 2 + green
-       -0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
+    let vertices: [f32; 20] = [
+       -0.5,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
+        0.5,  0.5, 0.0, 1.0, 0.0, // vertex 2 + green
+        0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
+       -0.5, -0.5, 1.0, 1.0, 1.0, // vertex 3 + blue
+    ];
+
+    let elements: [u32; 6] = [
+        0, 1, 2,
+        2, 3, 0,
     ];
 
     // upload data to card
-    println!("creating vertex buffer object (vbo)");
+    println!("vertices: creating vertex buffer object (vbo)");
     let mut vbo = 0;
     unsafe {
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(gl::ARRAY_BUFFER, (vertices.len() * mem::size_of::<f32>()) as GLsizeiptr, mem::transmute(&vertices[0]), gl::STATIC_DRAW);
+    }
+    gl_error();
+
+    // upload data to card
+    println!("elements: creating vertex buffer object (vbo)");
+    let mut ebo = 0;
+    unsafe {
+        gl::GenBuffers(1, &mut ebo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (elements.len() * mem::size_of::<u32>()) as GLsizeiptr, mem::transmute(&elements[0]), gl::STATIC_DRAW);
     }
     gl_error();
 
@@ -140,7 +156,10 @@ fn main() {
         alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
 
         // draw graphics
-        unsafe { gl::DrawArrays(gl::TRIANGLES, 0, 3); }
+        unsafe {
+            // gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+        }
 
         // present graphics
 
