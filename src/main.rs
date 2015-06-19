@@ -21,7 +21,7 @@ out vec3 o_color;
 
 void main() {
     o_color = color;
-    gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -73,16 +73,14 @@ fn main() {
     gl_error();
 
 
-    let vertices: [f32; 20] = [
-       -0.5,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
-        0.5,  0.5, 0.0, 1.0, 0.0, // vertex 2 + green
-        0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
-       -0.5, -0.5, 1.0, 1.0, 1.0, // vertex 3 + blue
+    let vertices: [f32; 15] = [
+        0.0,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
+        0.5, -0.5, 0.0, 1.0, 0.0, // vertex 2 + green
+       -0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
     ];
 
-    let elements: [u32; 6] = [
+    let elements: [u32; 3] = [
         0, 1, 2,
-        2, 3, 0,
     ];
 
     // upload data to card
