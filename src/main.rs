@@ -15,18 +15,22 @@ mod shaders;
 static VS_SRC: &'static str = "
 #version 150 core
 in vec2 position;
+in vec3 color;
+
+out vec3 o_color;
 
 void main() {
+    o_color = color;
     gl_Position = vec4(position, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
 #version 150 core
-uniform vec3 triangle_color;
+in vec3 o_color;
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(triangle_color, 1.0);
+    out_color = vec4(o_color, 1.0);
 }";
 
 fn main() {
@@ -67,10 +71,10 @@ fn main() {
     gl_error();
 
 
-    let vertices: [f32; 6] = [
-        0.0,  0.5, // vertex 1
-        0.5, -0.5, // vertex 2
-       -0.5, -0.5, // vertex 3
+    let vertices: [f32; 15] = [
+        0.0,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
+        0.5, -0.5, 0.0, 1.0, 0.0, // vertex 2 + green
+       -0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
     ];
 
     // upload data to card
@@ -85,22 +89,39 @@ fn main() {
 
 
     prog.use_prog();
+
     let pos_attr = prog.get_attrib("position");
-    println!("position attribute: {}", pos_attr);
+    println!("position: attribute: {}", pos_attr);
     gl_error();
 
-    println!("setting vertex attribut pointer and enabling enabling vertex attrib array");
+    println!("position: setting vertex attribute pointer and enabling enabling vertex attrib array");
     unsafe {
         let pos_attr_u = pos_attr as GLuint;
         println!("  enable vertex attrib array");
         gl::EnableVertexAttribArray(pos_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, 0, ptr::null());
+        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, ptr::null());
         gl_error();
     }
 
-    let triangle_color_u = prog.get_unif("triangle_color");
+    let color_attr = prog.get_attrib("color");
+    println!("color: attribute: {}", pos_attr);
+    gl_error();
+
+    println!("color: setting vertex attribute pointer and enabling enabling vertex attrib array");
+    unsafe {
+        let color_attr_u = color_attr as GLuint;
+        println!("  enable vertex attrib array");
+        gl::EnableVertexAttribArray(color_attr_u);
+        gl_error();
+        println!("  vertex attrib pointer");
+        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
+        gl_error();
+    }
+
+
+    // let triangle_color_u = prog.get_unif("triangle_color");
 
     let t_start = precise_time_s();
 
@@ -114,7 +135,7 @@ fn main() {
 
         // update scene
         let t_diff = t_now - t_start;
-        triangle_color_u.upload_3f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0, 0.0, 0.0);
+        // triangle_color_u.upload_3f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0, 0.0, 0.0);
 
         // draw graphics
         unsafe { gl::DrawArrays(gl::TRIANGLES, 0, 3); }
