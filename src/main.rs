@@ -29,8 +29,10 @@ static FS_SRC: &'static str = "
 in vec3 o_color;
 out vec4 out_color;
 
+uniform float alpha;
+
 void main() {
-    out_color = vec4(o_color, 1.0);
+    out_color = vec4(o_color, 1.0) * alpha;
 }";
 
 fn main() {
@@ -121,7 +123,7 @@ fn main() {
     }
 
 
-    // let triangle_color_u = prog.get_unif("triangle_color");
+    let alpha_u = prog.get_unif("alpha");
 
     let t_start = precise_time_s();
 
@@ -135,7 +137,7 @@ fn main() {
 
         // update scene
         let t_diff = t_now - t_start;
-        // triangle_color_u.upload_3f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0, 0.0, 0.0);
+        alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
 
         // draw graphics
         unsafe { gl::DrawArrays(gl::TRIANGLES, 0, 3); }
