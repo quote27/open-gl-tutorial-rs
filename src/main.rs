@@ -2,10 +2,12 @@ extern crate gl;
 extern crate glfw;
 extern crate cgmath;
 extern crate time;
+extern crate image;
 
 use time::precise_time_s;
 use gl::types::*;
 use glfw::{Action, Context, Key};
+use image::GenericImage;
 use std::mem;
 use std::ptr;
 use shaders::{Shader, Program, Uniform};
@@ -33,15 +35,15 @@ in vec3 o_color;
 in vec2 o_texcoord;
 out vec4 out_color;
 
-uniform sampler2D tex_check_a;
-uniform sampler2D tex_check_b;
+uniform sampler2D tex_kitty;
+uniform sampler2D tex_puppy;
 
 uniform float alpha;
 
 void main() {
-    vec4 col_a = texture(tex_check_a, o_texcoord);
-    vec4 col_b = texture(tex_check_b, o_texcoord);
-    out_color = mix(col_a, col_b, 0.5) * vec4(o_color, 1.0); // * alpha;
+    vec4 col_a = texture(tex_kitty, o_texcoord);
+    vec4 col_b = texture(tex_puppy, o_texcoord);
+    out_color = mix(col_a, col_b, 0.5) + vec4(o_color, 1.0) * 0.0; // * alpha;
 }";
 
 fn main() {
@@ -165,41 +167,36 @@ fn main() {
     }
 
 
-    // textures
-    let checkerboard_a_tex = [
-        0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 0.0, 0.0, 0.0f32,
-    ];
-    let checkerboard_b_tex = [
-        0.5, 0.5, 0.5, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.5, 0.5, 0.5f32,
-    ];
-
+    println!("loading textures");
     let mut textures: [GLuint; 2] = [0, 0];
-
     unsafe {
+        use std::path::Path;
+
+        let img0 = image::open(&Path::new("data/sample.png")).unwrap();
+        let (w0, h0) = img0.dimensions();
+        let img1 = image::open(&Path::new("data/sample2.png")).unwrap();
+        let (w1, h1) = img1.dimensions();
+
         gl::GenTextures(2, mem::transmute(&textures[0]));
 
         gl::ActiveTexture(gl::TEXTURE0);
         gl::BindTexture(gl::TEXTURE_2D, textures[0]);
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_a_tex[0]));
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as GLint, w0 as i32, h0 as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, mem::transmute(img0.raw_pixels().as_ptr()));
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-        prog.get_unif("tex_check_a").upload_1i(0);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        prog.get_unif("tex_kitty").upload_1i(0);
 
         gl::ActiveTexture(gl::TEXTURE1);
         gl::BindTexture(gl::TEXTURE_2D, textures[1]);
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_b_tex[0]));
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, w1 as i32, h1 as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, mem::transmute(img1.raw_pixels().as_ptr()));
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-        prog.get_unif("tex_check_b").upload_1i(1);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        prog.get_unif("tex_puppy").upload_1i(1);
     }
-
-
 
 
     let alpha_u = prog.get_unif("alpha");
