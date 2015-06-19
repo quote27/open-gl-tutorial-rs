@@ -41,7 +41,7 @@ uniform float time;
 void main() {
     vec4 col_a;
     if(o_texcoord.y > 0.5)
-        col_a = texture(tex_check_a, vec2(o_texcoord.x, 1 - o_texcoord.y));
+        col_a = texture(tex_check_a, vec2(o_texcoord.x + sin(o_texcoord.y * 60 + time * 2.0) / 30.0, 1.0 - o_texcoord.y));
     else
         col_a = texture(tex_check_a, o_texcoord);
 
@@ -171,18 +171,17 @@ fn main() {
 
     // textures
     let checkerboard_a_tex = [
-        //0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-        //1.0, 1.0, 1.0, 0.0, 0.0, 0.0f32,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0f32,
+        0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 0.0, 0.0, 0.0f32,
+        //1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        //0.0, 0.0, 0.0, 0.0, 0.0, 0.0f32,
     ];
     let checkerboard_b_tex = [
         0.5, 0.5, 0.5, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.5, 0.5, 0.5f32,
     ];
 
-    let mut textures: [GLuint; 2] = [0, 0];
-
+    let textures: [GLuint; 2] = [0, 0];
     unsafe {
         gl::GenTextures(2, mem::transmute(&textures[0]));
 
@@ -191,8 +190,8 @@ fn main() {
         gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_a_tex[0]));
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         prog.get_unif("tex_check_a").upload_1i(0);
 
         gl::ActiveTexture(gl::TEXTURE1);
@@ -200,12 +199,10 @@ fn main() {
         gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_b_tex[0]));
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         prog.get_unif("tex_check_b").upload_1i(1);
     }
-
-
 
 
     let time_u = prog.get_unif("time");
@@ -228,7 +225,8 @@ fn main() {
 
         // update scene
         let t_diff = t_now - t_start;
-        time_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
+        //let t_diff = ((t_diff * 4.0).sin() as f32 + 1.0) / 2.0
+        time_u.upload_1f(t_diff as f32);
 
         // draw graphics
         unsafe {
