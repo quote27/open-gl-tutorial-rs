@@ -16,23 +16,29 @@ static VS_SRC: &'static str = "
 #version 150 core
 in vec2 position;
 in vec3 color;
+in vec2 texcoord;
 
 out vec3 o_color;
+out vec2 o_texcoord;
 
 void main() {
     o_color = color;
+    o_texcoord = texcoord;
     gl_Position = vec4(position, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
 #version 150 core
 in vec3 o_color;
+in vec2 o_texcoord;
 out vec4 out_color;
+
+uniform sampler2D tex;
 
 uniform float alpha;
 
 void main() {
-    out_color = vec4(o_color, 1.0) * alpha;
+    out_color = texture(tex, o_texcoord) * vec4(o_color, 1.0) * alpha;
 }";
 
 fn main() {
@@ -73,16 +79,18 @@ fn main() {
     gl_error();
 
 
-    let vertices: [f32; 20] = [
-       -0.5,  0.5, 1.0, 0.0, 0.0, // vertex 1 + red
-        0.5,  0.5, 0.0, 1.0, 0.0, // vertex 2 + green
-        0.5, -0.5, 0.0, 0.0, 1.0, // vertex 3 + blue
-       -0.5, -0.5, 1.0, 1.0, 1.0, // vertex 3 + blue
+    let vertices = [
+    //  pos,       color,         texcoords
+       -0.5,  0.5, 1.0, 0.0, 0.0, 0.0, 0.0, // top left + red
+        0.5,  0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // top right + green
+        0.5, -0.5, 0.0, 0.0, 1.0, 1.0, 1.0, // bottom right + blue
+       -0.5, -0.5, 1.0, 1.0, 1.0, 0.0, 1.0f32, // bottom left + blue
     ];
+    let vertex_size = 7;
 
-    let elements: [u32; 6] = [
+    let elements = [
         0, 1, 2,
-        2, 3, 0,
+        2, 3, 0u32,
     ];
 
     // upload data to card
@@ -96,7 +104,7 @@ fn main() {
     gl_error();
 
     // upload data to card
-    println!("elements: creating vertex buffer object (vbo)");
+    println!("elements: creating vertex buffer object (ebo)");
     let mut ebo = 0;
     unsafe {
         gl::GenBuffers(1, &mut ebo);
@@ -119,7 +127,7 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, ptr::null());
+        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, ptr::null());
         gl_error();
     }
 
@@ -134,9 +142,43 @@ fn main() {
         gl::EnableVertexAttribArray(color_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (5 * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
+        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
         gl_error();
     }
+
+    let texcoord_attr = prog.get_attrib("texcoord");
+    println!("texcoord: attribute: {}", pos_attr);
+    gl_error();
+
+    println!("texcoord: setting vertex attribute pointer and enabling enabling vertex attrib array");
+    unsafe {
+        let texcoord_attr_u = texcoord_attr as GLuint;
+        println!("  enable vertex attrib array");
+        gl::EnableVertexAttribArray(texcoord_attr_u);
+        gl_error();
+        println!("  vertex attrib pointer");
+        gl::VertexAttribPointer(texcoord_attr_u, 2, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(5 * mem::size_of::<f32>()));
+        gl_error();
+    }
+
+
+    // textures
+    let checkerboard_tex = [
+        0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 0.0, 0.0, 0.0f32,
+    ];
+
+    let mut tex = 0;
+    unsafe {
+        gl::GenTextures(1, &mut tex);
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_tex[0]));
+
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+    }
+
 
 
     let alpha_u = prog.get_unif("alpha");
@@ -149,6 +191,12 @@ fn main() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             handle_window_event(&mut window, event);
+        }
+
+        // clear
+        unsafe {
+            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
         // update scene
