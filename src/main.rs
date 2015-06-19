@@ -21,7 +21,7 @@ out vec3 o_color;
 
 void main() {
     o_color = color;
-    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
+    gl_Position = vec4(position, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -32,7 +32,7 @@ out vec4 out_color;
 uniform float alpha;
 
 void main() {
-    out_color = vec4(o_color, 1.0) * alpha;
+    out_color = vec4(1 - o_color, 1.0) * alpha;
 }";
 
 fn main() {
