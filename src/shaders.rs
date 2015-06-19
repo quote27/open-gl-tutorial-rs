@@ -193,6 +193,12 @@ impl Uniform {
         let Uniform(u) = *self;
         unsafe { gl::Uniform1f(u, a); }
     }
+
+    pub fn upload_1i(&self, a: i32) {
+        let Uniform(u) = *self;
+        unsafe { gl::Uniform1i(u, a); }
+    }
+
 }
 
 impl fmt::Display for Uniform {

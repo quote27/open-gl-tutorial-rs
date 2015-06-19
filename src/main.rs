@@ -33,12 +33,15 @@ in vec3 o_color;
 in vec2 o_texcoord;
 out vec4 out_color;
 
-uniform sampler2D tex;
+uniform sampler2D tex_check_a;
+uniform sampler2D tex_check_b;
 
 uniform float alpha;
 
 void main() {
-    out_color = texture(tex, o_texcoord) * vec4(o_color, 1.0) * alpha;
+    vec4 col_a = texture(tex_check_a, o_texcoord);
+    vec4 col_b = texture(tex_check_b, o_texcoord);
+    out_color = mix(col_a, col_b, 0.5) * vec4(o_color, 1.0); // * alpha;
 }";
 
 fn main() {
@@ -163,21 +166,39 @@ fn main() {
 
 
     // textures
-    let checkerboard_tex = [
+    let checkerboard_a_tex = [
         0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
         1.0, 1.0, 1.0, 0.0, 0.0, 0.0f32,
     ];
+    let checkerboard_b_tex = [
+        0.5, 0.5, 0.5, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.5, 0.5, 0.5f32,
+    ];
 
-    let mut tex = 0;
+    let mut textures: [GLuint; 2] = [0, 0];
+
     unsafe {
-        gl::GenTextures(1, &mut tex);
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_tex[0]));
+        gl::GenTextures(2, mem::transmute(&textures[0]));
 
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_2D, textures[0]);
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_a_tex[0]));
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+        prog.get_unif("tex_check_a").upload_1i(0);
+
+        gl::ActiveTexture(gl::TEXTURE1);
+        gl::BindTexture(gl::TEXTURE_2D, textures[1]);
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, 2, 2, 0, gl::RGB, gl::FLOAT, mem::transmute(&checkerboard_b_tex[0]));
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+        prog.get_unif("tex_check_b").upload_1i(1);
     }
+
 
 
 
