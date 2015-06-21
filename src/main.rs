@@ -51,6 +51,18 @@ void main() {
     out_color = mix(col_a, col_b, 0.5) + vec4(o_color, 1.0) * 0.0; // * alpha;
 }";
 
+struct State {
+    flip_x: bool,
+}
+
+impl State {
+    fn new() -> State {
+        State {
+            flip_x: false,
+        }
+    }
+}
+
 fn main() {
     println!("open.gl tutorial begin");
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -173,7 +185,7 @@ fn main() {
 
 
     println!("loading textures");
-    let mut textures: [GLuint; 2] = [0, 0];
+    let textures: [GLuint; 2] = [0, 0];
     unsafe {
         use std::path::Path;
 
@@ -218,12 +230,18 @@ fn main() {
 
     let t_start = precise_time_s();
 
+    let mut xflip_angle = -45.0;
+    let mut xflip_speed = 0.0;
+
     println!("starting main loop");
     while !window.should_close() {
         let t_now = precise_time_s();
+
+        let mut frame_state = State::new();
+
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+            handle_window_event(&mut window, event, &mut frame_state);
         }
 
         // clear
@@ -236,11 +254,16 @@ fn main() {
         let t_diff = (t_now - t_start) as f32;
         alpha_u.upload_1f(((t_diff * 4.0).sin() + 1.0) / 2.0);
 
-        let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff).into());
-        let s = (t_diff * 5.0).sin() * 0.25 + 0.75;
-        let scale = Matrix3::from_value(s);
-        let model_m4 = Matrix4::from(scale * *rot180.as_ref());
+        if frame_state.flip_x {
+            xflip_speed = 180.0;
+        }
+
+        let rot180 = Basis3::from_axis_angle(&Vector3::new(1.0, 0.0, 0.0), deg(xflip_angle).into());
+        let model_m4 = Matrix4::from(*rot180.as_ref());
         model_u.upload_m4f(&model_m4);
+
+        xflip_angle += xflip_speed / t_diff;
+        xflip_speed /= 1.0 + 0.2 / t_diff;
 
         // draw graphics
         unsafe {
@@ -256,10 +279,13 @@ fn main() {
     println!("open.gl tutorial end");
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, s: &mut State) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true);
+        }
+        glfw::WindowEvent::Key(Key::Space, _, Action::Press, _) => {
+            s.flip_x = true;
         }
         _ => {}
     }
