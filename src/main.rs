@@ -24,12 +24,14 @@ in vec2 texcoord;
 out vec3 o_color;
 out vec2 o_texcoord;
 
-uniform mat4 trans;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
 
 void main() {
     o_color = color;
     o_texcoord = texcoord;
-    gl_Position = trans * vec4(position, 0.0, 1.0);
+    gl_Position = proj * view * model * vec4(position, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -203,7 +205,16 @@ fn main() {
 
 
     let alpha_u = prog.get_unif("alpha");
-    let trans_u = prog.get_unif("trans");
+    let model_u = prog.get_unif("model");
+    let view_u = prog.get_unif("view");
+    let proj_u = prog.get_unif("proj");
+
+    let mut proj_m4 = perspective(deg(45.0), 800.0 / 600.0, 1.0, 10.0);
+    let mut view_m4 = Matrix4::look_at(&Point3::new(1.2, 1.2, 1.2), &Point3::new(0.0, 0.0, 0.0), &Vector3::new(0.0, 0.0, 1.0));
+
+    proj_u.upload_m4f(&proj_m4);
+    view_u.upload_m4f(&view_m4);
+
 
     let t_start = precise_time_s();
 
@@ -226,10 +237,9 @@ fn main() {
         alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
 
         let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff as f32).into());
-
-        let mut trans_mat4 = Matrix4::identity();
-        trans_mat4 = trans_mat4 * Matrix4::from(*rot180.as_ref());
-        trans_u.upload_m4f(&trans_mat4);
+        let mut model_mat4 = Matrix4::identity();
+        model_mat4 = model_mat4 * Matrix4::from(*rot180.as_ref());
+        model_u.upload_m4f(&model_mat4);
 
         // draw graphics
         unsafe {
