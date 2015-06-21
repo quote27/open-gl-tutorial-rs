@@ -209,8 +209,8 @@ fn main() {
     let view_u = prog.get_unif("view");
     let proj_u = prog.get_unif("proj");
 
-    let mut proj_m4 = perspective(deg(45.0), 800.0 / 600.0, 1.0, 10.0);
-    let mut view_m4 = Matrix4::look_at(&Point3::new(1.2, 1.2, 1.2), &Point3::new(0.0, 0.0, 0.0), &Vector3::new(0.0, 0.0, 1.0));
+    let proj_m4 = perspective(deg(45.0), 800.0 / 600.0, 1.0, 10.0);
+    let view_m4 = Matrix4::look_at(&Point3::new(1.2, 1.2, 1.2), &Point3::new(0.0, 0.0, 0.0), &Vector3::new(0.0, 0.0, 1.0));
 
     proj_u.upload_m4f(&proj_m4);
     view_u.upload_m4f(&view_m4);
@@ -233,13 +233,14 @@ fn main() {
         }
 
         // update scene
-        let t_diff = t_now - t_start;
-        alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
+        let t_diff = (t_now - t_start) as f32;
+        alpha_u.upload_1f(((t_diff * 4.0).sin() + 1.0) / 2.0);
 
-        let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff as f32).into());
-        let mut model_mat4 = Matrix4::identity();
-        model_mat4 = model_mat4 * Matrix4::from(*rot180.as_ref());
-        model_u.upload_m4f(&model_mat4);
+        let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff).into());
+        let s = (t_diff * 5.0).sin() * 0.25 + 0.75;
+        let scale = Matrix3::from_value(s);
+        let model_m4 = Matrix4::from(scale * *rot180.as_ref());
+        model_u.upload_m4f(&model_m4);
 
         // draw graphics
         unsafe {
