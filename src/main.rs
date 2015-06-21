@@ -8,6 +8,7 @@ use time::precise_time_s;
 use gl::types::*;
 use glfw::{Action, Context, Key};
 use image::GenericImage;
+use cgmath::*;
 use std::mem;
 use std::ptr;
 use shaders::{Shader, Program, Uniform};
@@ -23,10 +24,12 @@ in vec2 texcoord;
 out vec3 o_color;
 out vec2 o_texcoord;
 
+uniform mat4 trans;
+
 void main() {
     o_color = color;
     o_texcoord = texcoord;
-    gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = trans * vec4(position, 0.0, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -200,6 +203,7 @@ fn main() {
 
 
     let alpha_u = prog.get_unif("alpha");
+    let trans_u = prog.get_unif("trans");
 
     let t_start = precise_time_s();
 
@@ -220,6 +224,12 @@ fn main() {
         // update scene
         let t_diff = t_now - t_start;
         alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
+
+        let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff as f32).into());
+
+        let mut trans_mat4 = Matrix4::identity();
+        trans_mat4 = trans_mat4 * Matrix4::from(*rot180.as_ref());
+        trans_u.upload_m4f(&trans_mat4);
 
         // draw graphics
         unsafe {
