@@ -130,7 +130,14 @@ fn main() {
         0.5,  0.5,  0.5, 1.0, 1.0, 1.0, 1.0, 0.0,
         0.5,  0.5,  0.5, 1.0, 1.0, 1.0, 1.0, 0.0,
        -0.5,  0.5,  0.5, 1.0, 1.0, 1.0, 0.0, 0.0,
-       -0.5,  0.5, -0.5, 1.0, 1.0, 1.0, 0.0, 1.0f32,
+       -0.5,  0.5, -0.5, 1.0, 1.0, 1.0, 0.0, 1.0,
+
+       -1.0, -1.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, -1.0, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+        1.0,  1.0, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+        1.0,  1.0, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+       -1.0,  1.0, -0.5, 0.0, 0.0, 0.0, 0.0, 1.0,
+       -1.0, -1.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0f32,
     ];
     let vertex_size = 8;
 
@@ -249,7 +256,7 @@ fn main() {
     let proj_u = prog.get_unif("proj");
 
     let mut proj_m4 = perspective(deg(45.0), 800.0 / 600.0, 1.0, 10.0);
-    let mut view_m4 = Matrix4::look_at(&Point3::new(1.2, 1.2, 1.2), &Point3::new(0.0, 0.0, 0.0), &Vector3::new(0.0, 0.0, 1.0));
+    let mut view_m4 = Matrix4::look_at(&Point3::new(2.5, 2.5, 2.0), &Point3::new(0.0, 0.0, 0.0), &Vector3::new(0.0, 0.0, 1.0));
 
     proj_u.upload_m4f(&proj_m4);
     view_u.upload_m4f(&view_m4);
@@ -267,7 +274,7 @@ fn main() {
 
         // clear
         unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+            gl::ClearColor(1.0, 1.0, 1.0, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
@@ -276,14 +283,28 @@ fn main() {
         alpha_u.upload_1f(((t_diff * 4.0).sin() as f32 + 1.0) / 2.0);
 
         let rot180 = Basis3::from_axis_angle(&Vector3::new(0.0, 0.0, 1.0), deg(180.0 * t_diff as f32).into());
-        let mut model_mat4 = Matrix4::identity();
-        model_mat4 = model_mat4 * Matrix4::from(*rot180.as_ref());
-        model_u.upload_m4f(&model_mat4);
+        let mut model_m4 = Matrix4::identity() * Matrix4::from(*rot180.as_ref());
+        model_u.upload_m4f(&model_m4);
 
         // draw graphics
         unsafe {
+            // draw cube
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
             //gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+
+            // draw floor
+            gl::DrawArrays(gl::TRIANGLES, 36, 6);
+        }
+
+        // translate box and flip it
+        let mut scale = Matrix4::identity();
+        scale.z.z = -1.0;
+        model_m4 = Matrix4::from_translation(&Vector3::new(0.0, 0.0, -1.0)) * scale * model_m4;
+        model_u.upload_m4f(&model_m4);
+
+        unsafe {
+            // draw flipped box
+            gl::DrawArrays(gl::TRIANGLES, 0, 36);
         }
 
         // present graphics
