@@ -28,8 +28,10 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
 
+uniform vec3 override_color;
+
 void main() {
-    o_color = color;
+    o_color = color * override_color;
     o_texcoord = texcoord;
     gl_Position = proj * view * model * vec4(position, 1.0);
 }";
@@ -251,6 +253,7 @@ fn main() {
     }
 
     let alpha_u = prog.get_unif("alpha");
+    let override_color_u = prog.get_unif("override_color");
     let model_u = prog.get_unif("model");
     let view_u = prog.get_unif("view");
     let proj_u = prog.get_unif("proj");
@@ -260,6 +263,8 @@ fn main() {
 
     proj_u.upload_m4f(&proj_m4);
     view_u.upload_m4f(&view_m4);
+
+    override_color_u.upload_3f(1.0, 1.0, 1.0);
 
 
     let t_start = precise_time_s();
@@ -291,9 +296,25 @@ fn main() {
             // draw cube
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
             //gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+        }
 
+        unsafe {
             // draw floor
+            // set depth mask to false for floor, having floor write to stencil buffer
+            gl::Enable(gl::STENCIL_TEST);
+
+            gl::StencilFunc(gl::ALWAYS, 1, 0xff); // set any stencil to 1 - anything that gets 'drawn' will save a 1 in the buffer
+            gl::StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
+            gl::StencilMask(0xff); // write to stencil buffer
+            gl::DepthMask(gl::FALSE);
+            gl::Clear(gl::STENCIL_BUFFER_BIT);
+
             gl::DrawArrays(gl::TRIANGLES, 36, 6);
+
+            gl::StencilFunc(gl::EQUAL, 1, 0xff); // draw if the value in the stencil buffer is 1
+            gl::StencilMask(0x00); // disable writing to the stencil buffer (we're just reading in this pass)
+            gl::DepthMask(gl::TRUE);
+
         }
 
         // translate box and flip it
@@ -302,10 +323,15 @@ fn main() {
         model_m4 = Matrix4::from_translation(&Vector3::new(0.0, 0.0, -1.0)) * scale * model_m4;
         model_u.upload_m4f(&model_m4);
 
+        override_color_u.upload_3f(0.3, 0.3, 0.3);
+
         unsafe {
             // draw flipped box
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            gl::Disable(gl::STENCIL_TEST);
         }
+
+        override_color_u.upload_3f(1.0, 1.0, 1.0);
 
         // present graphics
 
