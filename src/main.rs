@@ -17,7 +17,7 @@ mod shaders;
 
 static VS_SRC: &'static str = "
 #version 150 core
-in vec2 position;
+in vec3 position;
 in vec3 color;
 in vec2 texcoord;
 
@@ -31,7 +31,7 @@ uniform mat4 proj;
 void main() {
     o_color = color;
     o_texcoord = texcoord;
-    gl_Position = proj * view * model * vec4(position, 0.0, 1.0);
+    gl_Position = proj * view * model * vec4(position, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -48,7 +48,7 @@ uniform float alpha;
 void main() {
     vec4 col_a = texture(tex_kitty, o_texcoord);
     vec4 col_b = texture(tex_puppy, o_texcoord);
-    out_color = mix(col_a, col_b, 0.5) + vec4(o_color, 1.0) * 0.0; // * alpha;
+    out_color = mix(col_a, col_b, 0.5) * vec4(o_color, 1.0); // * alpha;
 }";
 
 fn main() {
@@ -90,13 +90,13 @@ fn main() {
 
 
     let vertices = [
-    //  pos,       color,         texcoords
-       -0.5,  0.5, 1.0, 0.0, 0.0, 0.0, 0.0, // top left + red
-        0.5,  0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // top right + green
-        0.5, -0.5, 0.0, 0.0, 1.0, 1.0, 1.0, // bottom right + blue
-       -0.5, -0.5, 1.0, 1.0, 1.0, 0.0, 1.0f32, // bottom left + blue
+    //  pos,            color,         texcoords
+       -0.5,  0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, // top left + red
+        0.5,  0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // top right + green
+        0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, // bottom right + blue
+       -0.5, -0.5, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0f32, // bottom left + blue
     ];
-    let vertex_size = 7;
+    let vertex_size = 8;
 
     let elements = [
         0, 1, 2,
@@ -137,7 +137,7 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(pos_attr_u, 2, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, ptr::null());
+        gl::VertexAttribPointer(pos_attr_u, 3, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, ptr::null());
         gl_error();
     }
 
@@ -152,7 +152,7 @@ fn main() {
         gl::EnableVertexAttribArray(color_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(2 * mem::size_of::<f32>()));
+        gl::VertexAttribPointer(color_attr_u, 3, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(3 * mem::size_of::<f32>()));
         gl_error();
     }
 
@@ -167,7 +167,7 @@ fn main() {
         gl::EnableVertexAttribArray(texcoord_attr_u);
         gl_error();
         println!("  vertex attrib pointer");
-        gl::VertexAttribPointer(texcoord_attr_u, 2, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(5 * mem::size_of::<f32>()));
+        gl::VertexAttribPointer(texcoord_attr_u, 2, gl::FLOAT, gl::FALSE, (vertex_size * mem::size_of::<f32>()) as GLint, mem::transmute(6 * mem::size_of::<f32>()));
         gl_error();
     }
 
