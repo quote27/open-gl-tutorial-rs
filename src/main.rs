@@ -60,7 +60,7 @@ fn main() {
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 2));
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-    glfw.window_hint(glfw::WindowHint::Resizable(false));
+    //glfw.window_hint(glfw::WindowHint::Resizable(false));
 
     let (mut window, events) = glfw.create_window(300, 300, "open.gl tutorial", glfw::WindowMode::Windowed)
         .expect("failed to create glfw window");
@@ -68,6 +68,7 @@ fn main() {
     gl::load_with(|s| window.get_proc_address(s));
 
     window.set_key_polling(true);
+    window.set_framebuffer_size_polling(true);
     window.make_current();
 
 
@@ -274,7 +275,17 @@ fn main() {
         let t_now = precise_time_s();
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+            match event {
+                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                    window.set_should_close(true);
+                }
+                glfw::WindowEvent::FramebufferSize(w, h) => {
+                    unsafe { gl::Viewport(0, 0, w, h); }
+                    proj_m4 = perspective(deg(45.0), w as f32 / h as f32, 1.0, 10.0);
+                    proj_u.upload_m4f(&proj_m4);
+                }
+                _ => {}
+            }
         }
 
         // clear
@@ -339,15 +350,6 @@ fn main() {
     }
 
     println!("open.gl tutorial end");
-}
-
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
-    match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true);
-        }
-        _ => {}
-    }
 }
 
 fn gl_error() {
